@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"pinger/internal/ping"
+	"pinger/api"
 )
 
 func main() {
@@ -12,6 +12,6 @@ func main() {
 		time.Sleep(5 * time.Second)
 
 		results := ping.GetPingResults()
-		fmt.Println(results)
+		api.SendResultsToAPI(results)
 	}
 }
