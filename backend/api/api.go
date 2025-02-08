@@ -2,23 +2,29 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"backend/internal/database"
 	"backend/models"
 )
 
-func CreatePingResult(w http.ResponseWriter, r *http.Request) {
-	var pingResults models.PingResults
+func CreatePingResult(repo *database.Repository) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+		var pingResults models.PingResults
 
-	if err := json.NewDecoder(r.Body).Decode(&pingResults); err != nil {
-		respondWithJSON(w, http.StatusBadRequest, ErrorMessage("Неверный формат данных"))
-		return
+		if err := json.NewDecoder(r.Body).Decode(&pingResults); err != nil {
+			respondWithJSON(w, http.StatusBadRequest, ErrorMessage("Неверный формат данных"))
+			return
+		}
+
+		err := repo.UpsertPingResults(pingResults)
+        if err != nil {
+            respondWithJSON(w, http.StatusInternalServerError, ErrorMessage(err.Error()))
+            return
+        }
+
+		respondWithJSON(w, http.StatusOK, SuccessMessage("Результат добавлен в базу данных"))
 	}
-
-	fmt.Println(pingResults)
-
-	respondWithJSON(w, http.StatusOK, SuccessMessage("Результат добавлен в базу данных"))
 }
 
 func ErrorMessage(message string) map[string]string {

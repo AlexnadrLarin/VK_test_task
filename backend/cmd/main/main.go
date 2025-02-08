@@ -7,10 +7,17 @@ import (
 	"os"
 
 	"backend/router"
+	"backend/internal/database"
 )
 
 func main() {
-	r := router.SetupRouter()
+	repo, err := database.NewRepository()
+    if err != nil {
+        log.Fatalf("Ошибка подключения к Postgres: %v", err)
+    }
+    defer repo.Close()
+
+	r := router.SetupRouter(repo)
 
 	fmt.Println("Сервер запущен")
 
