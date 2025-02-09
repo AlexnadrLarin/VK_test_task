@@ -1,4 +1,4 @@
-FROM golang:1.23.5 as builder
+FROM golang:1.23.5 AS builder
 
 WORKDIR /pinger_app_build
 
