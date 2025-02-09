@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"backend/internal/middleware"
 	"backend/internal/database"
 	"backend/models"
 )
@@ -17,6 +18,12 @@ func CreatePingResult(repo *database.Repository) http.HandlerFunc {
 
 		if err := json.NewDecoder(r.Body).Decode(&pingResults); err != nil {
 			log.Printf("Ошибка при декодировании данных: %v", err)
+			respondWithJSON(w, http.StatusBadRequest, ErrorMessage("Неверный формат данных"))
+			return
+		}
+
+		if err := middleware.ValidatePingResults(pingResults.Results); err != nil {
+			log.Printf("Ошибка валидации данных: %v", err)
 			respondWithJSON(w, http.StatusBadRequest, ErrorMessage("Неверный формат данных"))
 			return
 		}
