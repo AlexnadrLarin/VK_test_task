@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  frontend:
+    build:
+      context: ./frontend 
+      args:
+        REACT_APP_BACKEND_API_URL: ${BACKEND_API_URL} 
+        REACT_APP_TIME_INTERVAL: ${TIME_INTERVAL}
+        NODE_ENV: ${NODE_ENV}
+    container_name: react_frontend
+    environment:
+      - PORT=${FRONTEND_PORT}
+    networks:
+      - backend_network
+    ports:
+      - ${FRONTEND_PORT}:${FRONTEND_PORT} 
+    depends_on:
+      - backend
+   
   backend:
     build:
       context: ./backend
@@ -8,6 +25,7 @@ services:
     environment:
      - BACKEND_PORT=${BACKEND_PORT}
      - DATABASE_URL=${DATABASE_URL}
+     - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS} 
     networks:
       - backend_network
     ports:
@@ -29,15 +47,16 @@ services:
       - postgres_data:/var/lib/postgresql/data  
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
-
   pinger:
     build: 
       context: ./pinger
     container_name: go_pinger
-    network_mode: "host"  
     environment:
       - BACKEND_API_URL=${BACKEND_API_URL}
+      - TIME_ZONE=${TIME_ZONE}
+      - TIME_INTERVAL=${TIME_INTERVAL}
       - DOCKER_HOST=unix:///var/run/docker.sock
+    network_mode: "host"  
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
