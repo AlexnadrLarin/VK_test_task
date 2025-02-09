@@ -24,7 +24,7 @@ func main() {
 
 	allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 	if allowedOrigins == "" {
-		log.Fatal("CORS_ALLOWED_ORIGINS не установлена")
+		log.Fatal("CORS_ALLOWED_ORIGINS не установлен")
 	}
 
 	originsList := strings.Split(allowedOrigins, ",")
@@ -43,7 +43,8 @@ func main() {
 
 	backendPort := os.Getenv("BACKEND_PORT")
 	if backendPort == "" {
-		log.Fatal("BACKEND_PORT не установлена")
+		log.Println("BACKEND_PORT не установлен, используется порт 8080 по умолчанию")
+		backendPort = "8080"
 	}
 
 	log.Println("Сервер запущен")
