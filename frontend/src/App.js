@@ -62,11 +62,13 @@ function App() {
      */
     const intervalSeconds = parseInt(process.env.REACT_APP_TIME_INTERVAL || '10', 10);
 
-    if (!process.env.REACT_APP_TIME_INTERVAL) {
-      console.warn('REACT_APP_TIME_INTERVAL не установлено. Используется значение по умолчанию (10 секунд).');
+    if (isNaN(intervalSeconds) || intervalSeconds <= 0) {
+      console.warn('Некорректное значение REACT_APP_TIME_INTERVAL. Используется значение по умолчанию (10 секунд).');
     }
 
-    const intervalMilliseconds = intervalSeconds * 1000;
+    const effectiveIntervalSeconds = isNaN(intervalSeconds) || intervalSeconds <= 0 ? 10 : intervalSeconds;
+
+    const intervalMilliseconds = effectiveIntervalSeconds * 1000;
 
     /**
      * Идентификатор интервала для периодического получения данных.
