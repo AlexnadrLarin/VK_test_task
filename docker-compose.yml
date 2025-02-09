@@ -7,7 +7,6 @@ services:
       args:
         REACT_APP_BACKEND_API_URL: ${BACKEND_API_URL} 
         REACT_APP_TIME_INTERVAL: ${TIME_INTERVAL}
-        NODE_ENV: ${NODE_ENV}
     container_name: react_frontend
     environment:
       - PORT=${FRONTEND_PORT}
