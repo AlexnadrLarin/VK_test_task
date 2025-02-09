@@ -14,6 +14,8 @@ FROM alpine:latest
 
 WORKDIR /pinger_app
 
+RUN apk add --no-cache tzdata
+
 COPY --from=builder /pinger_app_build/pinger_microservice .
 
 CMD ["./pinger_microservice"]

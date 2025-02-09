@@ -2,11 +2,12 @@ package ping
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
-	"time"
-	"fmt"
+	"os"
 	"sync"
+	"time"
 
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -27,28 +28,24 @@ func GetPingResults() models.PingResults {
 	}
 
 	var wg sync.WaitGroup
-	resultsChannel := make(chan []models.PingResult)
+	var results []models.PingResult
+
+	var resultsLock sync.Mutex 
 
 	for _, container := range containers {
 		wg.Add(1)
 		go func(containerID string) {
 			defer wg.Done()
 			containerResults := inspectAndPingContainer(cli, containerID)
-			resultsChannel <- containerResults
+			resultsLock.Lock()
+			results = append(results, containerResults...)
+			resultsLock.Unlock()
 		}(container.ID)
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultsChannel)
-	}()
+	wg.Wait()
 
-	var results models.PingResults
-	for containerResults := range resultsChannel {
-		results.Results = append(results.Results, containerResults...)
-	}
-
-	return results
+	return models.PingResults{Results: results}
 }
 
 func inspectAndPingContainer(cli *client.Client, containerID string) []models.PingResult {
@@ -58,8 +55,13 @@ func inspectAndPingContainer(cli *client.Client, containerID string) []models.Pi
 		return nil
 	}
 
+	if containerInfo.NetworkSettings == nil || len(containerInfo.NetworkSettings.Networks) == 0 {
+		return nil
+	}
+
 	var wg sync.WaitGroup
-	resultsChannel := make(chan models.PingResult)
+	var results []models.PingResult
+	var resultsLock sync.Mutex
 
 	for _, network := range containerInfo.NetworkSettings.Networks {
 		ip := network.IPAddress
@@ -70,26 +72,20 @@ func inspectAndPingContainer(cli *client.Client, containerID string) []models.Pi
 					defer wg.Done()
 					pingTime, date, success := pingContainer(ip, port)
 					if success {
-						resultsChannel <- models.PingResult{
+						resultsLock.Lock()
+						results = append(results, models.PingResult{
 							IP:       ip,
 							PingTime: pingTime,
 							Date:     date,
-						}
+						})
+						resultsLock.Unlock()
 					}
 				}(ip, port.Port())
 			}
 		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultsChannel)
-	}()
-
-	var results []models.PingResult
-	for result := range resultsChannel {
-		results = append(results, result)
-	}
+	wg.Wait()
 
 	return results
 }
@@ -97,7 +93,18 @@ func inspectAndPingContainer(cli *client.Client, containerID string) []models.Pi
 func pingContainer(ip string, port string) (string, string, bool) {
 	pingTimeout := 5 * time.Second
 
-	startTime := time.Now()
+	timezone := os.Getenv("TIME_ZONE")
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	location, err := time.LoadLocation(timezone)
+	if err != nil {
+		log.Printf("Ошибка загрузки часового пояса: %v", err)
+		location = time.UTC
+	}
+
+	startTime := time.Now().In(location)
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", ip, port), pingTimeout)
 	if err != nil {
 		log.Printf("Ошибка пинга %s:%s %v", ip, port, err)
@@ -106,7 +113,6 @@ func pingContainer(ip string, port string) (string, string, bool) {
 	defer conn.Close()
 
 	pingTime := time.Since(startTime).String()
-	date := startTime.Format(time.RFC3339)
 
-	return pingTime, date, true
+	return pingTime, startTime.Format("02:01:2006:15:04:05.000"), true
 }
