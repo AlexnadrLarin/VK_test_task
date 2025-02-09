@@ -6,12 +6,6 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-if (process.env.NODE_ENV === 'production') {
-    console.log = function() {};
-    console.warn = function() {};
-    console.error = function() {};
-}
-
 app.use(helmet());
 
 const __dirname = path.resolve();
