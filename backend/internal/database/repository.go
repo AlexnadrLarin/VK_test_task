@@ -46,9 +46,11 @@ func (repo *Repository) UpsertPingResults(results models.PingResults) error {
         return err
     }
 
-    defer func() {
+	defer func() {
         if err != nil {
-            tx.Rollback(context.Background()) 
+            tx.Rollback(context.Background())
+        } else {
+            tx.Commit(context.Background())
         }
     }()
 
@@ -65,7 +67,7 @@ func (repo *Repository) UpsertPingResults(results models.PingResults) error {
         }
     }
 
-    return tx.Commit(context.Background())
+    return nil
 }
 
 func (repo *Repository) GetPingResults() (models.PingResults, error) {
