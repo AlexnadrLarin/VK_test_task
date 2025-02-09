@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -40,12 +38,14 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
     networks:
       - backend_network
     volumes:
       - postgres_data:/var/lib/postgresql/data  
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
+
   pinger:
     build: 
       context: ./pinger
@@ -58,6 +58,33 @@ services:
     network_mode: "host"  
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+# Добавлены контейнеры для тестирования 
+# Контейнер1 слушает порт 8081. Таймаут работы: 15 минут.
+  container1:
+    image: alpine:latest
+    container_name: test_container1
+    command: ["sh", "-c", "trap 'exit 0' TERM INT; timeout 900 sh -c 'while true; do nc -l -p 8081; done'"]
+    ports:
+      - "8081:8081" 
+
+# Контейнер1 слушает порт 8082. Таймаут работы: 30 секунд. Тестируется ситуация, если контейнер упал.
+  container2:
+    image: alpine:latest
+    container_name: test_container2
+    command: ["sh", "-c", "while true; do echo 'Listening on 8082'; nc -l -p 8082 -e /bin/cat; done & sleep 30 && echo 'Container2 is stopping' && exit 0"]
+    ports:
+      - "8082:8082"
+
+# Контейнер1 слушает порты 9090б 9091. Таймаут работы: 15 минут. Тестируется ситуация, если у контейнера не 1 порт.
+# Если хотя бы 1 порт ответил, то пинг считается успешным.
+  container3:
+    image: alpine:latest
+    container_name: test_container3
+    command: ["sh", "-c", "trap 'exit 0' TERM INT; timeout 900 sh -c 'while true; do nc -l -p 9090 & nc -l -p 9091; done'"]
+    ports:
+      - "9090:9090"
+      - "9091:9091"
 
 networks:
   backend_network:
